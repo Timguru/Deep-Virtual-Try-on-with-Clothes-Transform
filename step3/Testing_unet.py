@@ -21,7 +21,6 @@ result_dir = './Conditioning/testing_results_with_conditioning_data/warping_resu
 
 
 def create_test_data():
-    i = 0
     resize_size = 256
     print('-'*30)
     print('Creating test images...')
@@ -33,14 +32,14 @@ def create_test_data():
     imgdatas = np.ndarray((len(imgs_names), resize_size, resize_size, 3), dtype=np.uint8)
     imgmasks = np.ndarray((len(imgs_names), resize_size, resize_size, 1), dtype=np.uint8)
 
-    for imgname in imgs_names:
+    for i, imgname in enumerate(imgs_names):
         midname = imgname[imgname.rindex("/") + 1:]
         #print('midname is: ', midname)
         #maskname = midname.split("_")[0] + "_5.jpg"
         maskname = midname.split("_")[0]
 
         img = load_img(img_folder + "/" + midname, grayscale = False)
-        
+
         img = img.resize( (resize_size, resize_size), Image.BILINEAR )
 
         img = img_to_array(img)
@@ -53,16 +52,13 @@ def create_test_data():
 
         imgdatas[i] = img
         imgmasks[i] = img_mask
-        i += 1
-
     print('loading done')
 
     return imgdatas, imgmasks, imgs_names
 
 def test(imgs_test, imgs_test_mask, model):
     print('predict test data')
-    imgs_test_result = model.predict([imgs_test, imgs_test_mask], batch_size=1, verbose=1)
-    return imgs_test_result
+    return model.predict([imgs_test, imgs_test_mask], batch_size=1, verbose=1)
 
 def get_model():
     resize_size = 256
@@ -77,20 +73,20 @@ def get_model():
         #y_pred = array_to_img(y_pred)
         #y_true = preprocess_input(y_true)
         #y_pred = preprocess_input(y_pred)
-        vgg = VGG16(include_top=False, weights='imagenet', input_shape=(resize_size, resize_size, 3)) 
-        loss_model_1 = Model(inputs=vgg.input, outputs=vgg.get_layer('block1_conv2').output) 
+        vgg = VGG16(include_top=False, weights='imagenet', input_shape=(resize_size, resize_size, 3))
+        loss_model_1 = Model(inputs=vgg.input, outputs=vgg.get_layer('block1_conv2').output)
         loss_model_1.trainable = False
 
-        loss_model_2 = Model(inputs=vgg.input, outputs=vgg.get_layer('block2_conv2').output) 
+        loss_model_2 = Model(inputs=vgg.input, outputs=vgg.get_layer('block2_conv2').output)
         loss_model_2.trainable = False
 
-        loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output) 
+        loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output)
         loss_model_3.trainable = False
 
-        loss_model_4 = Model(inputs=vgg.input, outputs=vgg.get_layer('block4_conv3').output) 
+        loss_model_4 = Model(inputs=vgg.input, outputs=vgg.get_layer('block4_conv3').output)
         loss_model_4.trainable = False
 
-        loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output) 
+        loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output)
         loss_model_5.trainable = False
 
         loss1 = K.mean(K.abs(loss_model_1(y_true) - loss_model_1(y_pred)))/1.6
@@ -99,9 +95,7 @@ def get_model():
         loss4 = K.mean(K.abs(loss_model_4(y_true) - loss_model_4(y_pred)))/2.8
         loss5 = K.mean(K.abs(loss_model_5(y_true) - loss_model_5(y_pred)))*10/0.8
 
-        loss = loss1 + loss2 + loss3 + loss4 + loss5
-
-        return loss
+        return loss1 + loss2 + loss3 + loss4 + loss5
 
     def custom_loss_one_layer(y_true, y_pred): 
         weight_p = 0.9999
@@ -109,15 +103,15 @@ def get_model():
         #y_true_p = preprocess_input(y_true)
         #y_pred_p = preprocess_input(y_pred)
         vgg = VGG16(include_top=False, weights='imagenet', input_shape=(resize_size, resize_size, 3)) 
-        
-        loss_model = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output) 
+
+        loss_model = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output)
         loss_model.trainable = False
 
         loss_p = K.mean(K.square(loss_model(y_true) - loss_model(y_pred)))
 
-        loss = weight_p * loss_p + weight_m * K.mean(K.square(y_pred - y_true), axis=-1)
-
-        return loss
+        return weight_p * loss_p + weight_m * K.mean(
+            K.square(y_pred - y_true), axis=-1
+        )
 
     def custom_loss_two_layers(y_true, y_pred): 
         weight_p = 0.9999
@@ -125,20 +119,20 @@ def get_model():
         #y_true_p = preprocess_input(y_true)
         #y_pred_p = preprocess_input(y_pred)
         vgg = VGG16(include_top=False, weights='imagenet', input_shape=(resize_size, resize_size, 3)) 
-        
-        loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output) 
+
+        loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output)
         loss_model_3.trainable = False
 
-        loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output) 
+        loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output)
         loss_model_5.trainable = False
 
-        
+
         loss3 = K.mean(K.square(loss_model_3(y_true) - loss_model_3(y_pred)))
         loss5 = K.mean(K.square(loss_model_5(y_true) - loss_model_5(y_pred)))
 
-        loss = weight_p * ((loss3 + loss5) / 2.0) + weight_m * K.mean(K.square(y_pred - y_true), axis=-1)
-
-        return loss
+        return weight_p * ((loss3 + loss5) / 2.0) + weight_m * K.mean(
+            K.square(y_pred - y_true), axis=-1
+        )
 
     model = load_model(model_name, custom_objects={'custom_loss_one_layer': custom_loss_one_layer})
     return model

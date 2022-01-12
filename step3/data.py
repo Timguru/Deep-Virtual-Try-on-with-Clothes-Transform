@@ -30,21 +30,19 @@ class dataProcess(object):
         self.resize_size = 256
 
     def create_train_data(self):
-        i = 0
-        
         print('-'*30)
         print('Creating training images...')
         print('-'*30)
         imgs = glob.glob(self.data_path+"/*."+self.img_type)
         print(len(imgs))
-        
+
         imgdatas = np.ndarray((len(imgs), self.resize_size, self.resize_size, 3), dtype=np.float32)
         imgmasks = np.ndarray((len(imgs), self.resize_size, self.resize_size, 1), dtype=np.float32)
         imglabels = np.ndarray((len(imgs), self.resize_size, self.resize_size, 3), dtype=np.float32)
 
         if not os.path.exists(self.npy_path):
             os.mkdir(self.npy_path)
-        for imgname in imgs:
+        for i, imgname in enumerate(imgs):
             midname = imgname[imgname.rindex("/")+1:]
             maskname = midname.split("_")[0] + "_5.jpg"
 
@@ -91,7 +89,7 @@ class dataProcess(object):
 
             #print('imgdatas[i] is: ' )
             #print(imgdatas[i])
-            
+
             if i % 100 == 0:
                 print('Done: {0}/{1} images'.format(i, len(imgs)))
             '''
@@ -107,7 +105,6 @@ class dataProcess(object):
                 num_of_imgs = 0
                 gc.collect()
             '''
-            i += 1
         '''
         np.save(self.npy_path + '/imgs_train.npy', imgdatas)
         np.save(self.npy_path + '/imgs_train_mask.npy', imgmasks)
@@ -118,8 +115,6 @@ class dataProcess(object):
 
 
     def create_test_data(self):
-        i = 0
-
         print('-'*30)
         print('Creating test images...')
         print('-'*30)
@@ -127,7 +122,7 @@ class dataProcess(object):
         print(len(imgs))
         imgdatas = np.ndarray((len(imgs), self.resize_size, self.resize_size, 3), dtype=np.float32)
         imgmasks = np.ndarray((len(imgs), self.resize_size, self.resize_size, 1), dtype=np.float32)
-        for imgname in imgs:
+        for i, imgname in enumerate(imgs):
             midname = imgname[imgname.rindex("/")+1:]
             maskname = midname.split("_")[0] + "_5.jpg"
             img = load_img(self.test_data_path + "/" + midname, grayscale = False)
@@ -145,7 +140,6 @@ class dataProcess(object):
             #img = np.array([img])
             imgdatas[i] = img
             imgmasks[i] = img_mask
-            i += 1
         print('loading done')
         '''
         np.save(self.npy_path + '/imgs_test.npy', imgdatas)
