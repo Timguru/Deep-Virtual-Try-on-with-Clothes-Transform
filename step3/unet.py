@@ -61,20 +61,20 @@ class myUnet(object):
             #y_pred = array_to_img(y_pred)
             #y_true = preprocess_input(y_true)
             #y_pred = preprocess_input(y_pred)
-            vgg = VGG16(include_top=False, weights='imagenet', input_shape=(self.resize_size, self.resize_size, 3)) 
-            loss_model_1 = Model(inputs=vgg.input, outputs=vgg.get_layer('block1_conv2').output) 
+            vgg = VGG16(include_top=False, weights='imagenet', input_shape=(self.resize_size, self.resize_size, 3))
+            loss_model_1 = Model(inputs=vgg.input, outputs=vgg.get_layer('block1_conv2').output)
             loss_model_1.trainable = False
 
-            loss_model_2 = Model(inputs=vgg.input, outputs=vgg.get_layer('block2_conv2').output) 
+            loss_model_2 = Model(inputs=vgg.input, outputs=vgg.get_layer('block2_conv2').output)
             loss_model_2.trainable = False
 
-            loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output) 
+            loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output)
             loss_model_3.trainable = False
 
-            loss_model_4 = Model(inputs=vgg.input, outputs=vgg.get_layer('block4_conv3').output) 
+            loss_model_4 = Model(inputs=vgg.input, outputs=vgg.get_layer('block4_conv3').output)
             loss_model_4.trainable = False
 
-            loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output) 
+            loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output)
             loss_model_5.trainable = False
 
             loss1 = K.mean(K.abs(loss_model_1(y_true) - loss_model_1(y_pred)))
@@ -83,29 +83,27 @@ class myUnet(object):
             loss4 = K.mean(K.abs(loss_model_4(y_true) - loss_model_4(y_pred)))
             loss5 = K.mean(K.abs(loss_model_5(y_true) - loss_model_5(y_pred)))
 
-            loss = (1*loss1 + 2*loss2 + 3*loss3 + 3*loss4 + 3*loss5) / 12.0
-
-            return loss
+            return (1*loss1 + 2*loss2 + 3*loss3 + 3*loss4 + 3*loss5) / 12.0
         
         def custom_loss(y_true, y_pred): 
             weight_p = 0.9
             weight_m = 0.1
             #y_true_p = preprocess_input(y_true)
             #y_pred_p = preprocess_input(y_pred)
-            vgg = VGG16(include_top=False, weights='imagenet', input_shape=(self.resize_size, self.resize_size, 3)) 
-            loss_model_1 = Model(inputs=vgg.input, outputs=vgg.get_layer('block1_conv2').output) 
+            vgg = VGG16(include_top=False, weights='imagenet', input_shape=(self.resize_size, self.resize_size, 3))
+            loss_model_1 = Model(inputs=vgg.input, outputs=vgg.get_layer('block1_conv2').output)
             loss_model_1.trainable = False
 
-            loss_model_2 = Model(inputs=vgg.input, outputs=vgg.get_layer('block2_conv2').output) 
+            loss_model_2 = Model(inputs=vgg.input, outputs=vgg.get_layer('block2_conv2').output)
             loss_model_2.trainable = False
 
-            loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output) 
+            loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output)
             loss_model_3.trainable = False
 
-            loss_model_4 = Model(inputs=vgg.input, outputs=vgg.get_layer('block4_conv3').output) 
+            loss_model_4 = Model(inputs=vgg.input, outputs=vgg.get_layer('block4_conv3').output)
             loss_model_4.trainable = False
 
-            loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output) 
+            loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output)
             loss_model_5.trainable = False
 
             loss1 = K.mean(K.abs(loss_model_1(y_true) - loss_model_1(y_pred)))
@@ -114,9 +112,9 @@ class myUnet(object):
             loss4 = K.mean(K.abs(loss_model_4(y_true) - loss_model_4(y_pred)))
             loss5 = K.mean(K.abs(loss_model_5(y_true) - loss_model_5(y_pred)))
 
-            loss = weight_p * ((loss1 + loss2 + loss3 + loss4 + loss5) / 5.0) + weight_m * K.mean(K.square(y_pred - y_true), axis=-1)
-
-            return loss
+            return weight_p * (
+                (loss1 + loss2 + loss3 + loss4 + loss5) / 5.0
+            ) + weight_m * K.mean(K.square(y_pred - y_true), axis=-1)
 
         def custom_loss_one_layer(y_true, y_pred): 
             weight_p = 0.9999
@@ -124,15 +122,15 @@ class myUnet(object):
             #y_true_p = preprocess_input(y_true)
             #y_pred_p = preprocess_input(y_pred)
             vgg = VGG16(include_top=False, weights='imagenet', input_shape=(self.resize_size, self.resize_size, 3)) 
-            
-            loss_model = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output) 
+
+            loss_model = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output)
             loss_model.trainable = False
 
             loss_p = K.mean(K.square(loss_model(y_true) - loss_model(y_pred)))
 
-            loss = weight_p * loss_p + weight_m * K.mean(K.square(y_pred - y_true), axis=-1)
-
-            return loss
+            return weight_p * loss_p + weight_m * K.mean(
+                K.square(y_pred - y_true), axis=-1
+            )
 
         def custom_loss_two_layers(y_true, y_pred): 
             weight_p = 0.9999
@@ -140,20 +138,20 @@ class myUnet(object):
             #y_true_p = preprocess_input(y_true)
             #y_pred_p = preprocess_input(y_pred)
             vgg = VGG16(include_top=False, weights='imagenet', input_shape=(self.resize_size, self.resize_size, 3)) 
-            
-            loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output) 
+
+            loss_model_3 = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_conv3').output)
             loss_model_3.trainable = False
 
-            loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output) 
+            loss_model_5 = Model(inputs=vgg.input, outputs=vgg.get_layer('block5_conv3').output)
             loss_model_5.trainable = False
 
-            
+
             loss3 = K.mean(K.square(loss_model_3(y_true) - loss_model_3(y_pred)))
             loss5 = K.mean(K.square(loss_model_5(y_true) - loss_model_5(y_pred)))
 
-            loss = weight_p * ((loss3 + loss5) / 2.0) + weight_m * K.mean(K.square(y_pred - y_true), axis=-1)
-
-            return loss
+            return weight_p * ((loss3 + loss5) / 2.0) + weight_m * K.mean(
+                K.square(y_pred - y_true), axis=-1
+            )
         
         
         #def wasserstein_loss(y_true, y_pred):

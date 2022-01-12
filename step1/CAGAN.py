@@ -165,8 +165,15 @@ def UNET_G(isize, nc_in=3, nc_out=3, ngf=64, fixed_input_size=True, use_batchnor
     xi_yi_sz32 = AveragePooling2D(pool_size=4)(xi_and_y_i)
     xi_yi_sz16 = AveragePooling2D(pool_size=8)(xi_and_y_i)
     xi_yi_sz8 = AveragePooling2D(pool_size=16)(xi_and_y_i)
-    layer1 = conv2d(64, kernel_size=4, strides=2, use_bias=(not (use_batchnorm and s>2)),
-                   padding="same", name = 'layer1') (_)
+    layer1 = conv2d(
+        64,
+        kernel_size=4,
+        strides=2,
+        use_bias=not use_batchnorm or s <= 2,
+        padding="same",
+        name='layer1',
+    )(_)
+
     layer1 = LeakyReLU(alpha=0.2)(layer1)
     layer1 = concatenate([layer1, xi_yi_sz64]) # ==========
     layer2 = conv2d(128, kernel_size=4, strides=2, use_bias=(not (use_batchnorm and s>2)),
@@ -177,8 +184,15 @@ def UNET_G(isize, nc_in=3, nc_out=3, ngf=64, fixed_input_size=True, use_batchnor
         layer2 = batchnorm()(layer2, training=1)
     layer3 = LeakyReLU(alpha=0.2)(layer2)
     layer3 = concatenate([layer3, xi_yi_sz32]) # ==========
-    layer3 = conv2d(256, kernel_size=4, strides=2, use_bias=(not (use_batchnorm and s>2)),
-                   padding="same", name = 'layer3') (layer3)
+    layer3 = conv2d(
+        256,
+        kernel_size=4,
+        strides=2,
+        use_bias=not use_batchnorm or s <= 2,
+        padding="same",
+        name='layer3',
+    )(layer3)
+
     if use_instancenorm:
         layer3 = instance_norm()(layer3, training=1)
     else:
@@ -193,9 +207,9 @@ def UNET_G(isize, nc_in=3, nc_out=3, ngf=64, fixed_input_size=True, use_batchnor
         layer4 = batchnorm()(layer4, training=1)
     layer4 = LeakyReLU(alpha=0.2)(layer4)
     layer4 = concatenate([layer4, xi_yi_sz8]) # ==========
-    
+
     layer9 = Conv2DTranspose(256, kernel_size=4, strides=2, use_bias=not use_batchnorm,
-                            kernel_initializer = conv_init, name = 'layer9')(layer4) 
+                            kernel_initializer = conv_init, name = 'layer9')(layer4)
     layer9 = Cropping2D(((1,1),(1,1)))(layer9)
     if use_instancenorm:
         layer9 = instance_norm()(layer9, training=1)
@@ -205,7 +219,7 @@ def UNET_G(isize, nc_in=3, nc_out=3, ngf=64, fixed_input_size=True, use_batchnor
     layer9 = Activation('relu')(layer9)
     layer9 = concatenate([layer9, xi_yi_sz16]) # ==========
     layer10 = Conv2DTranspose(128, kernel_size=4, strides=2, use_bias=not use_batchnorm,
-                            kernel_initializer = conv_init, name = 'layer10')(layer9) 
+                            kernel_initializer = conv_init, name = 'layer10')(layer9)
     layer10 = Cropping2D(((1,1),(1,1)))(layer10)
     if use_instancenorm:
         layer10 = instance_norm()(layer10, training=1)
@@ -215,33 +229,33 @@ def UNET_G(isize, nc_in=3, nc_out=3, ngf=64, fixed_input_size=True, use_batchnor
     layer10 = Activation('relu')(layer10)
     layer10 = concatenate([layer10, xi_yi_sz32]) # ==========
     layer11 = Conv2DTranspose(64, kernel_size=4, strides=2, use_bias=not use_batchnorm,
-                            kernel_initializer = conv_init, name = 'layer11')(layer10) 
+                            kernel_initializer = conv_init, name = 'layer11')(layer10)
     layer11 = Cropping2D(((1,1),(1,1)))(layer11)
     if use_instancenorm:
         layer11 = instance_norm()(layer11, training=1)
     else:
         layer11 = batchnorm()(layer11, training=1)
     layer11 = Activation('relu')(layer11)
-        
+
     layer12 = concatenate([layer11, xi_yi_sz64]) # ==========
     layer12 = Activation('relu')(layer12)
     layer12 = Conv2DTranspose(32, kernel_size=4, strides=2, use_bias=not use_batchnorm,
-                            kernel_initializer = conv_init, name = 'layer12')(layer12) 
+                            kernel_initializer = conv_init, name = 'layer12')(layer12)
     layer12 = Cropping2D(((1,1),(1,1)))(layer12)
     if use_instancenorm:
         layer12 = instance_norm()(layer12, training=1)
     else:
         layer12 = batchnorm()(layer12, training=1)
-    
+
     layer12 = conv2d(4, kernel_size=4, strides=1, use_bias=(not (use_batchnorm and s>2)),
                    padding="same", name = 'out128') (layer12)
-    
+
     alpha = Lambda(lambda x: x[:, :, :, 0:1], name='alpha')(layer12)
     x_i_j = Lambda(lambda x: x[:, :, :, 1:], name='x_i_j')(layer12)
     alpha = Activation("sigmoid", name='alpha_sigmoid')(alpha)
     x_i_j = Activation("tanh", name='x_i_j_tanh')(x_i_j)
     out = concatenate([alpha, x_i_j], name = 'out128_concat')
-    
+
     return Model(inputs=inputs, outputs=[out])   
 
 
@@ -388,16 +402,16 @@ def crop_img(img, large_size, small_size):
     img_width = small_size[0]
     img_height = small_size[1]
     diff_size = (large_size[0]-small_size[0], large_size[1]-small_size[1])
-    
-    x_range = [i for i in range(diff_size[0])]
-    y_range = [j for j in range(diff_size[1])]
+
+    x_range = list(range(diff_size[0]))
+    y_range = list(range(diff_size[1]))
     x0 = np.random.choice(x_range)
     y0 = np.random.choice(y_range)
-    
+
     img = np.array(img)
-    
+
     img = img[y0: y0+img_height, x0: x0+img_width, :]
-    
+
     return img
 
 def read_image(fn):
@@ -484,14 +498,14 @@ assert len(train_A)
 def minibatch(data, batchsize):
     length = len(data)
     epoch = i = 0
-    tmpsize = None    
+    tmpsize = None
     while True:
-        size = tmpsize if tmpsize else batchsize
-        
+        size = tmpsize or batchsize
+
         if i+size > length:
             shuffle(data)
             i = 0
-            epoch+=1        
+            epoch+=1
         rtn = [read_image(data[j]) for j in range(i,i+size)]
         i+=size
         tmpsize = yield epoch, np.float32(rtn)       

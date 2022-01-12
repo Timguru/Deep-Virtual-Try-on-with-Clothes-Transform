@@ -96,11 +96,11 @@ def minibatch_demo(data, batchsize, fn_y_i=None):
     tmpsize = None
     shuffle(data)
     while True:
-        size = tmpsize if tmpsize else batchsize
+        size = tmpsize or batchsize
         if i+size > length:
             shuffle(data)
             i = 0
-            epoch+=1    
+            epoch+=1
         rtn = [read_image(data[j]) for j in range(i,i+size)]
         i+=size
         tmpsize = yield epoch, np.float32(rtn)       
@@ -119,29 +119,28 @@ def showX(X, alpha, rows=1):
     #print (int_X.shape)
     if channel_first:
         int_X = np.moveaxis(int_X.reshape(-1,3,imageSize,imageSize), 1, 3)
+    elif X.shape[-1] == 9:
+        print("X.shape[-1] == 9")
+        img_x_i = int_X[:,:,:,:3]
+        img_y_i = int_X[:,:,:,3:6]
+        img_y_j = int_X[:,:,:,6:9]
+        int_X = np.concatenate([img_x_i, img_y_i, img_y_j], axis=1)
     else:
-        if X.shape[-1] == 9:
-            print("X.shape[-1] == 9")
-            img_x_i = int_X[:,:,:,:3]
-            img_y_i = int_X[:,:,:,3:6]
-            img_y_j = int_X[:,:,:,6:9]
-            int_X = np.concatenate([img_x_i, img_y_i, img_y_j], axis=1)
-        else:
-            
-            print("X.shape[-1] != 9")
-            print('int_X shape is', int_X.shape)
-            #int_X = int_X.reshape(-1, 128, 128, 3)
-            input_image = int_X[0, :, :, :].reshape(imageSize, imageSize, 3)
-            target_image = int_X[2, :, :, :].reshape(imageSize, imageSize, 3)
-            output_image = int_X[3, :, :, :].reshape(imageSize, imageSize, 3)
-            #int_X = np.concatenate([img_x_i, img_y_i, img_y_j], axis=1)
 
-    
+        print("X.shape[-1] != 9")
+        print('int_X shape is', int_X.shape)
+        #int_X = int_X.reshape(-1, 128, 128, 3)
+        input_image = int_X[0, :, :, :].reshape(imageSize, imageSize, 3)
+        target_image = int_X[2, :, :, :].reshape(imageSize, imageSize, 3)
+        output_image = int_X[3, :, :, :].reshape(imageSize, imageSize, 3)
+        #int_X = np.concatenate([img_x_i, img_y_i, img_y_j], axis=1)
+
+
     #int_X = int_X.reshape(rows, -1, 128, 128, 3).swapaxes(1,2).reshape(rows*imageSize, -1, 3)
-    
+
     if not isRGB:
         int_X = cv2.cvtColor(int_X, cv2.COLOR_LAB2RGB)
-    
+
     #print(int_alpha)
     print('int_alpha type is', int_alpha.dtype)
     print('int_alpha shape is', int_alpha.shape)
@@ -151,7 +150,7 @@ def showX(X, alpha, rows=1):
     #int_alpha[:, 0:16] = 0
     #int_alpha[:, 111:128] = 0
     #print(int_alpha)
-    
+
     Image.fromarray(input_image).save(os.path.join(origin_dir, filenames_5[idx].split("/")[-1]))
     Image.fromarray(output_image).save(os.path.join(output_dir, filenames_5[idx].split("/")[-1]))
     print(filenames_5[idx].split("/")[-1][:-4] + '_1.jpg')
@@ -162,9 +161,9 @@ def showG(A):
     def G(fn_generate, X):
         print('X.shape is', X.shape)
         print('X[0].shape is', X[0].shape)
-        
+
         #r = np.array([fn_generate([X[i:i+1]]) for i in range(X.shape[0])])
-        [fake_output, rec_input, alpha] = fn_generate([X[0:1]])
+        [fake_output, rec_input, alpha] = fn_generate([X[:1]])
         #return r.swapaxes(0,1)[:,:,0]
         return fake_output, rec_input, alpha
 
